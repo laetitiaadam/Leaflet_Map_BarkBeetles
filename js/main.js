@@ -6,25 +6,28 @@
 
 //creating the map; defining the location in the center of the map (geographic coords) and the zoom level. These are properties of the leaflet map object
 //the map window has been given the id 'map' in the .html file
+
 var map = L.map('map', {
 	center: [50.9, 10.45],
 	zoom: 8
 });
 
-
-
 //adding base map/s 
-// add open street map as base layer
+// add open street map and carto as base layers
+
 var osmap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 });
 
+var carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+}).addTo(map);
 
-// Add your ArcGIS MapServer tile layer to Leaflet
+// Add Tree Cover Layer from ArcGIS MapServer tile
+
 var treelosstiles = L.tileLayer("https://tiles.arcgis.com/tiles/Sf0q24s0oDKgX14j/arcgis/rest/services/TreeCoverAndTreeLoss_allScale/MapServer/tile/{z}/{y}/{x}", {
     attribution: "Hansen/UMD/Google/USGS/NASA",
-    maxZoom: 19,  // adjust based on the layer
-    subdomains: [] // usually not needed for ArcGIS tiles
+    maxZoom: 19, 
 }).addTo(map);
 
 
@@ -40,13 +43,6 @@ var treeloss =  L.tileLayer.wms('https://geoservice.dlr.de/eoc/land/wms', {
 */
 
 
-
-// for using the two base maps in the layer control, I defined a baseMaps variable
-/*var baseMaps = {
-	"Open Street Map": osmap
-}
-*/
-
 //
 //---- Part 2: Adding a scale bar
 //
@@ -58,7 +54,7 @@ map.zoomControl.remove();
 
 // Add zoom control to top-right
 L.control.zoom({
-    position: 'bottomright'  // moves control to top-right
+    position: 'bottomright'
 }).addTo(map);
 
 //
@@ -136,10 +132,7 @@ Thuringia = L.geoJson(Thuringia, {
 		//layer.on({click: zoomToFeature}); }
 });
 
-
 Thuringia.addTo(map); 
-
-
 
 
 //
@@ -162,7 +155,6 @@ function highlightFeature(e) {
     }
 }
 
-
 //function for resetting the highlight
 function resetHighlight(e) {
 	barkbeetles2023.resetStyle(e.target);
@@ -181,21 +173,6 @@ function interactiveFunction(feature, layer) {
         click: zoomToFeature
    } );
 }
-
-/*
-var myParkStyle = {
-    color: "#D34137",
-    weight: 5,
-    opacity: 0.65
-}
-
-parks = L.geoJson(npark, {
-    style: myParkStyle,
-    onEachFeature: interactiveFunction
-}).addTo(map); 
- 
-*/
-
 
 //
 //---- Part 7: adding GeoJSON point features to marker object
@@ -226,13 +203,13 @@ barkbeetles2023.addTo(map);
 
 var barkbeetles2023 = L.geoJson(barkbeetles2023, {
     pointToLayer: function(feature, latlng) {
-        // Get the value from your property
+        // Get the value from attribute colmn
         var value = feature.properties["Anzahl"];
         
-        // Scale the radius (you can adjust the multiplier for better visual effect)
-        var radius = value * 0.0001; // for example, 0.0002 pixels per unit
+        // Scale the radius 
+        var radius = value * 0.0001; 
         
-        // Return a proportional circle marker
+        // Proportional circle marker
         return L.circleMarker(latlng, {
             radius: radius,
             fillColor: "#821520",
@@ -257,26 +234,28 @@ barkbeetles2023.addTo(map);
 //adding attribution for bark beetle data
 map.attributionControl.addAttribution('Bark beetle data © Hauptstelle für Waldschutz des Forstlichen Forschungs- und Kompetenzzentrums Gotha');
 
-
-
 //
 //---- Part 8: Adding a layer control for base maps and feature layers
 //
-
-//the variable features lists layers that I want to control with the layer control
+//list of layers for layer control
 var features = {
 	"Bark Beetle Monitoring 2023": barkbeetles2023,
     "Tree Cover": treelosstiles,
-    "Mask for Federal State of Thuringia": europe,
-    "Open Street Map": osmap,
+    "Mask for Federal State of Thuringia": europe
 }
 
+var baselayers = {
+    "Open Street Map": osmap,
+    "Carto Light": carto
+}
 
-L.control.layers(null, features, {position:'topright', collapsed: false}).addTo(map);
 
 //the legend uses the layer control with entries for the base maps and two of the layers we added
 //in case either base maps or features are not used in the layer control, the respective element in the properties is null
 
+L.control.layers(baselayers, features, {position:'topright', collapsed: false}).addTo(map);
+
+//custom legend
 const legend = L.control({ position: 'topright' });
 
 legend.onAdd = function(map) {
@@ -329,22 +308,21 @@ legend.addTo(map);
 
 
 
-
+//Introduction text and images 
 const intro = L.control({ position: 'topleft' });
 
 intro.onAdd = function(map) {
     const div = L.DomUtil.create('div', 'info legend');
 
-    // Container styling (like your legend)
+    // Container styling
     div.style.backgroundColor = 'white';
     div.style.padding = '10px';
     div.style.border = '1px solid #ccc';
     div.style.borderRadius = '5px';
     div.style.boxShadow = '0 0 5px rgba(0,0,0,0.3)';
-    div.style.maxWidth = '400px';  // optional, limits width
+    div.style.maxWidth = '400px'; 
     div.style.fontFamily = '"Helvetica Neue", Arial, sans-serif';
 
-    // Your content
     div.innerHTML = `
         <!-- Top section with image + headings -->
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
