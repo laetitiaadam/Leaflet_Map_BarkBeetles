@@ -7,27 +7,37 @@
 //creating the map; defining the location in the center of the map (geographic coords) and the zoom level. These are properties of the leaflet map object
 //the map window has been given the id 'map' in the .html file
 var map = L.map('map', {
-	center: [50.9, 11.05],
+	center: [50.9, 10.45],
 	zoom: 8
 });
 
 
-//adding base map/s 
 
+//adding base map/s 
 // add open street map as base layer
 var osmap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-	});
- 
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+});
+
+
+// Add your ArcGIS MapServer tile layer to Leaflet
+var treelosstiles = L.tileLayer("https://tiles.arcgis.com/tiles/Sf0q24s0oDKgX14j/arcgis/rest/services/TreeCoverAndTreeLoss_allScale/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "Hansen/UMD/Google/USGS/NASA",
+    maxZoom: 19,  // adjust based on the layer
+    subdomains: [] // usually not needed for ArcGIS tiles
+}).addTo(map);
+
+
+/*
 // add the DLR forest canopy loss WMS layer
- var treeloss =  L.tileLayer.wms('https://geoservice.dlr.de/eoc/land/wms', {
+var treeloss =  L.tileLayer.wms('https://geoservice.dlr.de/eoc/land/wms', {
     layers: 'TREE_CANOPY_COVER_LOSS_PERC_ALLFOREST_P1Y',
     format: 'image/png',
     transparent: true,
     version: '1.3.0',
     attribution: '© DLR EOC Geoservice'
   });
-
+*/
 
 
 
@@ -42,6 +52,14 @@ var osmap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 //
 
 L.control.scale({position:'bottomright',imperial:false}).addTo(map);
+
+// Remove default zoom control
+map.zoomControl.remove();
+
+// Add zoom control to top-right
+L.control.zoom({
+    position: 'bottomright'  // moves control to top-right
+}).addTo(map);
 
 //
 //---- Part 3: adding GeoJSON line features 
@@ -88,13 +106,13 @@ function onClick(evt){
 //Adding a mask of the federal state of Thuringia to highlight the area of interest 
 //when basemaps are activated Thuringia stands out
 
-var germany = L.geoJson(germany, {
+var europe = L.geoJson(europe, {
     style: {
         color: "#ffffffa0",           // stroke (border) color
         weight: 2,                      // stroke width
         opacity: 1,                     // stroke opacity
         fillColor: "#ffffffff",       // fill color
-        fillOpacity: 0.8                // fill opacity
+        fillOpacity: 1                // fill opacity
     }
 }).addTo(map);
 
@@ -108,8 +126,10 @@ function zoomToFeature(e) {
 
 Thuringia = L.geoJson(Thuringia, {
     style: {
-		color: "#ffffff",
+		color: "#696969",
 		weight: 1.5},
+        fillColor: "#ffffff",   // fill color
+        fillOpacity: 0,
     onEachFeature: function (feature, layer) {
         layer.on('click', zoomToFeature);}
 		//you can also write:
@@ -210,7 +230,7 @@ var barkbeetles2023 = L.geoJson(barkbeetles2023, {
         var value = feature.properties["Anzahl"];
         
         // Scale the radius (you can adjust the multiplier for better visual effect)
-        var radius = value * 0.0002; // for example, 0.0002 pixels per unit
+        var radius = value * 0.0001; // for example, 0.0002 pixels per unit
         
         // Return a proportional circle marker
         return L.circleMarker(latlng, {
@@ -234,6 +254,10 @@ var barkbeetles2023 = L.geoJson(barkbeetles2023, {
 
 barkbeetles2023.addTo(map);
 
+//adding attribution for bark beetle data
+map.attributionControl.addAttribution('Bark beetle data © Hauptstelle für Waldschutz des Forstlichen Forschungs- und Kompetenzzentrums Gotha');
+
+
 
 //
 //---- Part 8: Adding a layer control for base maps and feature layers
@@ -242,18 +266,150 @@ barkbeetles2023.addTo(map);
 //the variable features lists layers that I want to control with the layer control
 var features = {
 	"Bark Beetle Monitoring 2023": barkbeetles2023,
-    "Tree Canopy Loss in % (2018-2021)": treeloss,
+    "Tree Cover": treelosstiles,
+    "Mask for Federal State of Thuringia": europe,
     "Open Street Map": osmap,
-    "Mask of Thuringia": germany
 }
+
+
+L.control.layers(null, features, {position:'topright', collapsed: false}).addTo(map);
 
 //the legend uses the layer control with entries for the base maps and two of the layers we added
 //in case either base maps or features are not used in the layer control, the respective element in the properties is null
 
-L.control.layers(null, features, {position:'topleft'}).addTo(map);
+const legend = L.control({ position: 'topright' });
+
+legend.onAdd = function(map) {
+    const div = L.DomUtil.create('div', 'info legend');
+
+    // Legend container styling
+    div.style.backgroundColor = 'white';
+    div.style.padding = '8px';
+    div.style.border = '1px solid #ccc';
+    div.style.borderRadius = '5px';
+    div.style.boxShadow = '0 0 5px rgba(0,0,0,0.3)';
+
+    div.innerHTML = `
+        <!-- Bark beetle circles -->
+        <div style="font-weight: bold; margin-bottom: 6px;">Amount of bark beetles caught in 2023</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="width: 24px; height: 24px; background: #821520; border-radius: 50%; display: inline-block;"></span>
+                <span style="margin-top: 4px;">200,000</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="width: 16px; height: 16px; background: #821520; border-radius: 50%; display: inline-block;"></span>
+                <span style="margin-top: 4px;">100,000</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="width: 12px; height: 12px; background: #821520; border-radius: 50%; display: inline-block;"></span>
+                <span style="margin-top: 4px;">5,000</span>
+            </div>
+        </div>
+
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+
+        <!-- Tree cover rectangles -->
+        <div style="font-weight: bold; margin-bottom: 6px;">Tree Cover</div>
+        <div class="legend-item" style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="width: 20px; height: 20px; background: #468b4d; display: inline-block; margin-right: 6px;"></span>
+            <span>Currently existing</span>
+        </div>
+        <div class="legend-item" style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="width: 20px; height: 20px; background: #fdae61; display: inline-block; margin-right: 6px;"></span>
+            <span>Damaged</span>
+        </div>
+    `;
+
+    return div;
+};
+
+legend.addTo(map);
 
 
 
 
+const intro = L.control({ position: 'topleft' });
 
+intro.onAdd = function(map) {
+    const div = L.DomUtil.create('div', 'info legend');
 
+    // Container styling (like your legend)
+    div.style.backgroundColor = 'white';
+    div.style.padding = '10px';
+    div.style.border = '1px solid #ccc';
+    div.style.borderRadius = '5px';
+    div.style.boxShadow = '0 0 5px rgba(0,0,0,0.3)';
+    div.style.maxWidth = '400px';  // optional, limits width
+    div.style.fontFamily = '"Helvetica Neue", Arial, sans-serif';
+
+    // Your content
+    div.innerHTML = `
+        <!-- Top section with image + headings -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <!-- Image -->
+            <img src="data/15LifeonLand_edit.png" alt="SDG15" style="height: 4em; width: auto; border-radius: 3px;">
+
+            <!-- Texts -->
+            <div>
+                <div style="font-weight: bold; color: #468b4d; font-size: 1.7em;">What is Happening to the Forest?</div>
+                <div style="font-weight: bold; color: #468b4d; font-size: 1.4em;">Tree Loss in Thuringia, Germany</div>
+            </div>
+        </div>
+        
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+
+        <!-- SDG15 -->
+        <div style="font-size: 1.2em; color: #468b4d; line-height: 1.4;">
+            Sustainable Development Goal 15.2 by the United Nations promotes the sustainable management of all forests by halting deforestation, 
+            restoring degraded forests, and significantly increasing global afforestation and reforestation.
+        </div>
+
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+        
+        <div style="font-weight: bold; color: #468b4d; font-size: 1.4em;">Can you spot the difference?</div>
+        
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+       
+        <!-- Image -->
+            <img src="data/BarkBeetleImage2.jpg" alt="HealthyForest" style="height: 16em; width: auto; border-radius: 4px;">
+            <img src="data/BarkBeetleImage.jpg" alt="ForestDecline" style="height: 16em; width: auto; border-radius: 4px;">
+
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+        
+        
+        <div style="font-weight: bold; color: #821520; font-size: 1.4em;">Bark Beetle Infestation and its Consequences</div>
+        
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+
+        <!-- Introductory text -->
+        <div style="font-size: 1.2em; color: #821520; line-height: 1.4;">
+            Climate change is putting our forests at risk. 
+            Next to other hazards, such as wild fires, longer periods of drought weaken spruce trees 
+            and allow the bark beetle to spread. In a balanced ecosystem this insect is useful for decomposing dead trees. 
+            Once it´s population is out of balance the bark beetle becomes a major driver of tree loss and forest decline.
+        </div>
+
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+        
+        <div style="font-weight: bold; color: #821520; font-size: 1.4em;">Explore the Map!</div>
+        
+        <!-- Gap between categories -->
+        <div style="height: 10px;"></div>
+
+        <div style="font-size: 1.2em; color: #821520; line-height: 1.4;">
+            Identify areas affected by bark beetle infestation. Click on the points to see the annual beetle catch counts from monitoring stations in 2023. Orange areas highlight regions of tree cover loss.
+        </div>
+    `;
+
+    return div;
+};
+
+intro.addTo(map);
