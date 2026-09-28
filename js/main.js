@@ -19,9 +19,16 @@ var osmap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 
-var carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+/*var carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO'
 });
+*/
+
+var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap',
+    maxZoom: 17
+});
+
 
 // Add Tree Cover Layer from ArcGIS MapServer tile
 
@@ -246,7 +253,8 @@ var features = {
 
 var baselayers = {
     "Open Street Map": osmap,
-    "Carto Light": carto
+	"Open Topo Map": topo
+    //"Carto Light": carto
 }
 
 
